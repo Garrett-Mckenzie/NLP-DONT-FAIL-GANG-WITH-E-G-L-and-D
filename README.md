@@ -7,3 +7,6 @@ Garrett:
 My corpus is called garrettCorpus.txt and the delimeter for the .txt file is "<EOD>"
 Delaney:
 My corpus is called delaneyCorpus.txt and the delimeter for the .txt file is a newline, each doc is separated by one or more blank lines.
+
+Ethan:
+My corpus is called ethanCorpus.txt and the delimeter is the usual end of sentence punctuation, including "." "?" "!"
