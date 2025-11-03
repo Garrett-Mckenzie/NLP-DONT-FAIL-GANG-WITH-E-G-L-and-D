@@ -4,7 +4,7 @@ THE NLP repo for UMW DATA 470 with Stephen the Steve Davies who has assigned us 
 Make sure to create a directory for your work and to add your data to the data directory.
 
 Garrett:
-My corpus is called garrettCorpus.txt and the delimeter for the .txt file is "<EOD>"
+My corpus is called garrettCorpus.txt and the delimeter for the .txt file is `"<EOD>"`
 Delaney:
 My corpus is called delaneyCorpus.txt and the delimeter for the .txt file is a newline, each doc is separated by one or more blank lines.
 
