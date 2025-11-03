@@ -12,3 +12,6 @@ My corpus is called delaneyCorpus.txt and the delimeter for the .txt file is a n
 Ethan:
 My corpus is called ethanCorpus.txt and the delimeter is the usual end of sentence punctuation, including "." "?" "!"
 **note**: The corpus has no new-line characters, it is all in one line in fact
+
+Laur:
+My corpus is called riderCorpus.txt and the delimeter is a newline.
