@@ -3,7 +3,7 @@ import re
 import sys
 from gensim.models import KeyedVectors
 
-useGpu = False
+device = "cpu"
 
 try:
 	ePath = sys.argv[1]
@@ -12,13 +12,15 @@ try:
 	lPath = sys.argv[4]
 	try:
 		g = sys.argv[5]
-		useGpu = True
+		if(g.lower()=="cpu"):
+			raise ExceptionType("using cpu")
+		device = "gpu"
 		print("utilizing GPU")
 	except(Exception):
 		print("utilizing strictly CPUs")
 
 except(Exception):
-	print("see run use:\npython main.py [path_to_ethanCorp] [path_to_garrettCorp] [path_to_delaneyCorp] [path_to_laraCorp] optional:[gpu|cpu]")
+	print("see run use:\npython main.py [path_to_ethanCorp] [path_to_garrettCorp] [path_to_delaneyCorp] [path_to_laurCorp] optional:[gpu|cpu]")
 
 #get embeddings
 try:
@@ -30,7 +32,15 @@ except(Exception):
 ethanDelim = [r"\.", r"\?", r"!"]
 garrDelim = [r"<EOD>"]
 delaneyDelim = [r"\n"]
+#laur same as delaney
 
 corpora = {}
-corpora[0] = p.createDocs(ePath,ethanDelim) 	
-	
+corpora[0] = p.createDocs(ePath,ethanDelim,device)
+corpora[1] = p.createDocs(gPath,garrDelim,device)		
+corpora[2] = p.createDocs(dPath,delaneyDelim,device)		
+corpora[3] = p.createDocs(lPath,delaneyDelim,device)		
+print(corpora[0])
+
+
+
+
