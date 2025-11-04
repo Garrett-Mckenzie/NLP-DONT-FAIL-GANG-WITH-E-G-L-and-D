@@ -14,4 +14,4 @@ My corpus is called ethanCorpus.txt and the delimeter is the usual end of senten
 **note**: The corpus has no new-line characters, it is all in one line in fact
 
 Laur:
-My corpus is called riderCorpus.txt and the delimeter is a newline.
+My corpus is called riderCorpus.txt and the delimeter is a newline. **note**: did not shuffle the lines.  Would recommend that.
