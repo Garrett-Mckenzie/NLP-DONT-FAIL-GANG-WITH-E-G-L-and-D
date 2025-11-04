@@ -45,6 +45,8 @@ corpora.append(np.array(p.createDocs(lPath,delaneyDelim,device)))
 print("chopping up corpora...")
 corpora = p.procrustes(corpora)
 
+#need to create encodings
+#sample for test,training, and unsupervised
 
 
 
