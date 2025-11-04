@@ -1,4 +1,5 @@
 import prep as p
+import numpy as np
 import re
 import sys
 from gensim.models import KeyedVectors
@@ -30,16 +31,24 @@ except(Exception):
 
 #attempt prep corpora
 ethanDelim = [r"\.", r"\?", r"!"]
-garrDelim = [r"<EOD>"]
+#garrDelim = [r"<EOD>"]
+#gar now using delaney delimiters
 delaneyDelim = [r"\n"]
 #laur same as delaney
 
-corpora = {}
-corpora[0] = p.createDocs(ePath,ethanDelim,device)
-corpora[1] = p.createDocs(gPath,garrDelim,device)		
-corpora[2] = p.createDocs(dPath,delaneyDelim,device)		
-corpora[3] = p.createDocs(lPath,delaneyDelim,device)		
-print(corpora[0])
+corpora = []
+corpora.append(np.array(p.createDocs(ePath,ethanDelim,device)))
+corpora.append(np.array(p.createDocs(gPath,delaneyDelim,device)))		
+corpora.append(np.array(p.createDocs(dPath,delaneyDelim,device)))		
+corpora.append(np.array(p.createDocs(lPath,delaneyDelim,device)))		
+
+print("chopping up corpora...")
+corpora = p.procrustes(corpora)
+
+
+
+
+
 
 
 

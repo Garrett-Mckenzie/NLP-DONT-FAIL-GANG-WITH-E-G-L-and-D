@@ -1,4 +1,5 @@
 # prep.py
+import numpy as np
 import re
 import string
 import os
@@ -32,9 +33,8 @@ def createDocs(pathToFile, delimiters, device="cpu", workers=None):
 	print(f"Fetching documents using {device.upper()}...")
 
 	# Split text into sentences
-	pattern = r"(?:{})(?:\s+|$)".format("|".join(delimiters))
+	pattern = r"(?:{})".format("|".join(delimiters))
 	sentences = [s.strip() for s in re.split(pattern, text) if s.strip()]
-
 	translator = str.maketrans('', '', string.punctuation)
 
 	if device == "cpu":
@@ -90,3 +90,15 @@ if __name__ == "__main__":
 		docs_gpu = createDocs("clnCorpus.txt", delimiters, device="gpu")
 		print(f"GPU cleaned {len(docs_gpu)} documents.")
 
+
+	
+def procrustes(corpora):
+	lengths = []
+	for corpus in corpora:
+		lengths.append(len(corpus))
+	smallest = min(lengths)
+
+	newCorpora=[]
+	for corpus in corpora:
+		newCorpora.append(np.random.choice(corpus,size=smallest,replace=False))	
+	return newCorpora
