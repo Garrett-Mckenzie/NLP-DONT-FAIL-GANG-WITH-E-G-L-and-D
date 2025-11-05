@@ -117,6 +117,9 @@ def main():
 
 		print("--saved data: dataSplits.pt--")
 		torch.save(splits, "dataSplits.pt")
+
+		print("--saved data: idfs.pt--")
+		torch.save(idfs, "idfs.pt")
 	else:
 		print("--loading data: dataSplits.pt--")
 		splits = torch.load(path1)
