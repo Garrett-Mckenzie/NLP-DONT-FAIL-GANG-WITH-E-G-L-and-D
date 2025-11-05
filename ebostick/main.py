@@ -9,15 +9,19 @@ from gensim.models import KeyedVectors
 def main():
 	device = "cpu"
 	prep = True
+	train = True
 	path1 = ""
 
 	try:
-		if sys.argv[1] == "-s":
+		if sys.argv[1] == "-e":
 			prep = False
-			print("skipping prep...")
+			train = False
+			print("skipping prep and training...")
 			path1 = sys.argv[2]
+			path2 = sys.argv[3]
+			path3 = sys.argv[4]
 			try:
-				g = sys.argv[3]
+				g = sys.argv[5]
 				if(g.lower()=="cpu"):
 					raise ExceptionType("using cpu")
 				device = "gpu"
@@ -27,7 +31,28 @@ def main():
 	except(Exception):
 		print("see run use:\npython main.py [path_to_ethanCorp] [path_to_garrettCorp] [path_to_delaneyCorp] [path_to_laurCorp] optional:[gpu|cpu]")
 
-		print("or skip training with saved data:\npython main.py -s [pathToDataSplit] optional:[gpu|cpu]")
+		print("or skip prep with saved data:\npython main.py -s [pathToDataSplit] optional:[gpu|cpu]")
+		print("or skip training with saved data:\npython main.py -e [pathToDataSplit] [pathToWeights1] [pathToWeights2] optional:[gpu|cpu]")
+
+	if train:	
+		try:
+			if sys.argv[1] == "-s":
+				prep = False
+				print("skipping prep...")
+				path1 = sys.argv[2]
+				try:
+					g = sys.argv[3]
+					if(g.lower()=="cpu"):
+						raise ExceptionType("using cpu")
+					device = "gpu"
+					print("utilizing GPU")
+				except(Exception):
+					print("utilizing strictly CPUs")
+		except(Exception):
+			print("see run use:\npython main.py [path_to_ethanCorp] [path_to_garrettCorp] [path_to_delaneyCorp] [path_to_laurCorp] optional:[gpu|cpu]")
+
+			print("or skip prep with saved data:\npython main.py -s [pathToDataSplit] optional:[gpu|cpu]")
+			print("or skip training with saved data:\npython main.py -e [pathToDataSplit] [pathToWeights1] [pathToWeights2] optional:[gpu|cpu]")
 		
 	if prep:
 		try:
@@ -47,7 +72,8 @@ def main():
 		except(Exception):
 			print("see run use:\npython main.py [path_to_ethanCorp] [path_to_garrettCorp] [path_to_delaneyCorp] [path_to_laurCorp] optional:[gpu|cpu]")
 
-			print("or skip training with saved data:\npython main.py -s [pathToDataSplit] optional:[gpu|cpu]")
+			print("or skip prep with saved data:\npython main.py -s [pathToDataSplit] optional:[gpu|cpu]")
+			print("or skip training with saved data:\npython main.py -e [pathToDataSplit] [pathToWeights1] [pathToWeights2] optional:[gpu|cpu]")
 
 #get embeddings
 	try:
@@ -94,55 +120,78 @@ def main():
 		print("--loading data: dataSplits.pt--")
 		splits = torch.load(path1)
 
-	if device == "gpu" and torch.cuda.is_available():
-		torch_device = torch.device("cuda")
-		print("Using GPU acceleration.")
+
+	if train:
+		if device == "gpu" and torch.cuda.is_available():
+			torch_device = torch.device("cuda")
+			print("Using GPU acceleration.")
+		else:
+			torch_device = torch.device("cpu")
+			torch.set_num_threads(torch.get_num_threads())	# enables CPU multithreading
+			print(f"Using CPU with {torch.get_num_threads()} threads.")
+		print("encoding labels...")
+		labels = t.hotEncoding(splits[0],torch_device)
+		print("creating feature matrix...")
+		xTrain = t.docsToMatrix(splits[0],torch_device)
+		w1 = torch.rand(xTrain.size()[1],24,requires_grad=True,device=torch_device)
+		w2 = torch.rand(24,len(labels[0]),requires_grad=True,device=torch_device)
+
+		print("training...")
+		eta = .03
+		lossDeltaThresh = 0.00001
+		max_iters = 10000
+		cur_iter=0
+
+		prevLoss = 100	
+		for cur_iter in range(max_iters):
+			# Forward pass
+			z1 = t.getLogit(xTrain, w1)
+			a1 = t.tanh(z1)
+			z2 = t.getLogit(a1, w2)
+			loss = t.getLoss(z2, labels)
+
+			# Backpropagation
+			loss.backward()
+
+			# Weight update
+			with torch.no_grad():
+				w1 -= eta * w1.grad
+				w2 -= eta * w2.grad
+
+				w1.grad = None
+				w2.grad = None
+
+			loss_value = loss.item()
+			if abs(prevLoss - loss_value) < lossDeltaThresh:
+				print(f"Converged at iter {cur_iter}, loss={loss_value:.4f}")
+				break
+
+			prevLoss = loss_value
+
+			if cur_iter % 100 == 0:
+				print(f"Iter {cur_iter}, Loss = {loss.item():.4f}")
+		
+		save = input("save weights(yes/no)?: ")
+		if save.lower().strip() == "yes":
+			w1 = w1.to('cpu')
+			w2 = w2.to('cpu')
+			torch.save(w1, "w1.pt")
+			torch.save(w2, "w2.pt")
+			print("--saved weights 1: w1.pt--")
+			print("--saved weights 2: w2.pt--")
+		else:
+			print("<<skipping save>>")
+		print("evaluating classifier with runtime weights...")
+
 	else:
-		torch_device = torch.device("cpu")
-		torch.set_num_threads(torch.get_num_threads())	# enables CPU multithreading
-		print(f"Using CPU with {torch.get_num_threads()} threads.")
+		print("--loading weights: w1.pt--")
+		w1 = torch.load(path2)
+		print("--loading weights: w2.pt--")
+		w2 = torch.load(path3)
+		print("evaluating classifier with saved weights...")
+	
+	### evaluate ###
 
-	print("encoding labels...")
-	labels = t.hotEncoding(splits[0],torch_device)
-	print("creating feature matrix...")
-	xTrain = t.docsToMatrix(splits[0],torch_device)
-	w1 = torch.rand(xTrain.size()[1],16,requires_grad=True,device=torch_device)
-	w2 = torch.rand(16,len(labels[0]),requires_grad=True,device=torch_device)
-
-	print("training...")
-	eta = .0001
-	lossDeltaThresh = 0.001
-	max_iters = 5000
-	cur_iter=0
-
-	prevLoss = 100	
-	for cur_iter in range(max_iters):
-		# Forward pass
-		z1 = t.getLogit(xTrain, w1)
-		a1 = t.tanh(z1)
-		z2 = t.getLogit(a1, w2)
-		loss = t.getLoss(z2, labels)
-
-		# Backpropagation
-		loss.backward()
-
-		# Weight update
-		with torch.no_grad():
-			w1 -= eta * w1.grad
-			w2 -= eta * w2.grad
-
-			w1.grad = None
-			w2.grad = None
-
-		loss_value = loss.item()
-		if abs(prevLoss - loss_value) < lossDeltaThresh:
-			print(f"Converged at iter {cur_iter}, loss={loss_value:.4f}")
-			break
-
-		prevLoss = loss_value
-
-		if cur_iter % 100 == 0:
-			print(f"Iter {cur_iter}, Loss = {loss.item():.4f}")
 
 if __name__ == "__main__":
 	import multiprocessing

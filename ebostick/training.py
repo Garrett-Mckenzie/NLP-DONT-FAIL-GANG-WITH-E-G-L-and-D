@@ -8,10 +8,11 @@ def hotEncoding(dSet,device):
 	label_to_idx = {lbl: i for i, lbl in enumerate(unique_labels)}
 	print("Label mapping:", label_to_idx)
 
-	label_indices = torch.tensor([label_to_idx[lbl] for lbl in labels])
+	label_indices = torch.tensor([label_to_idx[lbl] for lbl in labels],device=device)
 
 	hotLabels = F.one_hot(label_indices,num_classes=len(unique_labels)).float().to(device)
 	return hotLabels
+
 		
 def docsToMatrix(dSet,device):
 	tensors = [doc[0] for doc in dSet]
