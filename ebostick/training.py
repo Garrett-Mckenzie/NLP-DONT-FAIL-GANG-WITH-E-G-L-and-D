@@ -32,4 +32,7 @@ def softmax(z, device):
 	g = torch.nn.Softmax(dim=1)
 	return g(z)
 
+def getLoss(a,y):
+	loss = F.cross_entropy(a,y)
+	return(loss)
 

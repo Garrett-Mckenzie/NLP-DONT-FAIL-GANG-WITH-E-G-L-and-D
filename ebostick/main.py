@@ -97,18 +97,22 @@ print("encoding labels...")
 labels = t.hotEncoding(splits[0])
 print("creating feature matrix...")
 xTrain = t.docsToMatrix(splits[0])
-
 w1 = torch.rand(xTrain.size()[1],4)
 
 print("training...")
+eta = .0001
+lossDeltaThresh = 0.001
+max_iters = 5000
+
 z = t.getLogit(xTrain,w1,device)
 xTrain = t.tanh(z,device)
 
 w2 = torch.rand(xTrain.size()[1],4)
 
 z = t.getLogit(xTrain,w2,device)
+loss = t.getLoss(z, labels)
+print(loss)
 xTrain = t.softmax(z,device)
-print(xTrain)
 
 
 
