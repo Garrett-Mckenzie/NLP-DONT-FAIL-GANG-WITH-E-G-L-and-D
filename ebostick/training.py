@@ -29,7 +29,7 @@ def getLogit(a, w):
 	
 def tanh(z):
 	return torch.tanh(z)
-def softmax(z, device):
+def softmax(z):
 	g = torch.nn.Softmax(dim=1)
 	return g(z)
 

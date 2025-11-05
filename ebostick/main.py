@@ -1,4 +1,5 @@
 import prep as p
+import evaluate as e
 import training as t
 import numpy as np
 import torch
@@ -191,7 +192,54 @@ def main():
 		print("evaluating classifier with saved weights...")
 	
 	### evaluate ###
+	if device == "gpu" and torch.cuda.is_available():
+		torch_device = torch.device("cuda")
+		print("Using GPU acceleration.")
+	else:
+		torch_device = torch.device("cpu")
+		torch.set_num_threads(torch.get_num_threads())	# enables CPU multithreading
+		print(f"Using CPU with {torch.get_num_threads()} threads.")
+	print("encoding labels...")
+	labels = t.hotEncoding(splits[1],torch_device)
+	print("creating feature matrix...")
+	xTest = t.docsToMatrix(splits[1],torch_device)
+	
+	# Forward pass
+	z1 = t.getLogit(xTest, w1)
+	a1 = t.tanh(z1)
+	z2 = t.getLogit(a1, w2)
+	a2 = t.softmax(z2)
 
+	yHat = torch.argmax(a2,dim=1)
+	y = labels.argmax(dim=1)
+	n = len(yHat)
+	correct = (y == yHat).sum().item()
+	recalls =[]
+	precisions = []
+	f1s = []
+
+	i =0
+	print("see label mappings above")
+	while i< len(labels[0]):
+		tp,fp,fn = e.tpFpFn(i,yHat,y)
+		recall = round((tp/(tp+fn))*100,2)
+		recalls.append(recall)
+		precision = round((tp/(tp+fp))*100,2)
+		precisions.append(precision)
+		f1 = round((2*precision*recall)/(precision+recall),2)
+		f1s.append(f1)
+
+		print(f"Corpus {i}")
+		print(f"	recall = {recall}%")
+		print(f"	precision = {precision}%")
+		print(f"	f1-score = {f1}%")
+		i+=1
+
+	print(f"overall:")
+	print(f"	accuracy = {round((correct/n)*100,2)}%")
+	print(f"	recall avg = {round(sum(recalls)/len(labels[0]),2)}%")
+	print(f"	precision avg = {round(sum(precisions)/len(labels[0]),2)}%")
+	print(f"	f1 avg = {round(sum(f1s)/len(labels[0]),2)}%")
 
 if __name__ == "__main__":
 	import multiprocessing
