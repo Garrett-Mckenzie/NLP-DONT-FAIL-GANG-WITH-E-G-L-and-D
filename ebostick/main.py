@@ -99,8 +99,8 @@ def main():
 		print("Using GPU acceleration.")
 	else:
 		torch_device = torch.device("cpu")
-		torch.set_num_threads(torch.get_num_threads())  # enables CPU multithreading
-    	print(f"Using CPU with {torch.get_num_threads()} threads.")
+		torch.set_num_threads(torch.get_num_threads())	# enables CPU multithreading
+		print(f"Using CPU with {torch.get_num_threads()} threads.")
 
 	print("encoding labels...")
 	labels = t.hotEncoding(splits[0],torch_device)
@@ -123,12 +123,6 @@ def main():
 		z2 = t.getLogit(a1, w2)
 		loss = t.getLoss(z2, labels)
 
-		# Check convergence
-		if abs(prevLoss - loss.item()) < lossDeltaThresh:
-			print(f"Converged at iter {cur_iter}, loss={loss.item():.4f}")
-			break
-		prevLoss = loss.item()
-
 		# Backpropagation
 		loss.backward()
 
@@ -137,15 +131,23 @@ def main():
 			w1 -= eta * w1.grad
 			w2 -= eta * w2.grad
 
-		w1.grad = None
-		w2.grad = None
+			w1.grad = None
+			w2.grad = None
+
+		loss_value = loss.item()
+		if abs(prevLoss - loss_value) < lossDeltaThresh:
+			print(f"Converged at iter {cur_iter}, loss={loss_value:.4f}")
+			break
+
+		prevLoss = loss_value
 
 		if cur_iter % 100 == 0:
 			print(f"Iter {cur_iter}, Loss = {loss.item():.4f}")
+
 if __name__ == "__main__":
-    import multiprocessing
-    multiprocessing.freeze_support()  # optional, but safe
-    main()
+	import multiprocessing
+	multiprocessing.freeze_support()  # optional, but safe
+	main()
 
 
 
