@@ -1,4 +1,3 @@
-import os
 from numpy import linalg as LA
 import pandas as pd
 import numpy as np
@@ -64,6 +63,9 @@ def prep():
         data = {"docs":corpus , "target":target}
         df_corpi.append(pd.DataFrame.from_dict(data,orient = "columns"))
         i += 1
+    
+    #get IDF scores
+    IDFScores = getIDF(df_corpi)
 
     #sample,stack,split, and shuffle
     data = pd.DataFrame()
@@ -81,42 +83,57 @@ def encode():
     train,test,labelMap = prep()
     trainX , trainY = train
     testX , testY = test
-    
-    #encode training data X
-    docCount = 0
+
+    #encode training data Y
+    totalTokens = 0
+    inEmbed = 0
     total = len(trainX)
     encodedTrainX = []
-    for doc in trainX:
+    for i in tqdm(range(total)):
+        doc = trainX.iloc[i]
         centroid = np.zeros(50)
         for token in nlp(doc):
             if not token.is_stop and not re.search(r"\s+",str(token).lower()): 
-                vec = getEmbed(embeds,str(token).lower())
-                centroid += vec/(LA.norm(vec,2.0))
+                vec , hasEmbed = getEmbed(embeds,str(token).lower())
+                inEmbed += hasEmbed
+                totalTokens += 1
+                if hasEmbed != 0:
+                    centroid += vec/(LA.norm(vec,2.0))
         encodedTrainX.append(centroid)
-        docCount += 1
-        print(f"{docCount} of {total}")
+    print(f"{(inEmbed/totalTokens)*100}% of tokens in training had an embedding in GLOVE")
 
     #encode testing data
-    docCount = 0
-    total = len(trainX)
+    totalTokens = 0
+    inEmbed = 0
+    total = len(testX)
     encodedTrainY = []
-    for doc in trainY:
+    for i in tqdm(range(total)):
+        doc = testX.iloc[i]
         centroid = np.zeros(50)
         for token in nlp(doc):
             if not token.is_stop and not re.search(r"\s+",str(token).lower()): 
-                vec = getEmbed(embeds,str(token).lower())
-                centroid += vec/(LA.norm(vec,2.0))
+                vec,hasEmbed = getEmbed(embeds,str(token).lower())
+                inEmbed += hasEmbed
+                totalTokens += 1
+                if hasEmbed != 0:
+                    centroid += vec/(LA.norm(vec,2.0))
         encodedTrainY.append(centroid)
-        docCount += 1
-        print(f"{docCount} of {total}")
+    print(f"{(inEmbed/totalTokens)*100}% of tokens in testing had an embedding in GLOVE")
 
 def getEmbed(embeds,token):
     vec = None
+    hasEmbed = 0
     try:
         vec = embeds[token]
+        hasEmbed += 1
     except Exception as e:
         vec = np.zeros(50)
-    return vec
+    return vec,hasEmbed
+
+def getIDF(corpi):
+    data = pd.DataFrame()
+    for corpus in corpi:
+        data = pd.concat([data,corpus],ignore_index = True)
 
 if __name__=="__main__":
-    encode()
+    encode()   
