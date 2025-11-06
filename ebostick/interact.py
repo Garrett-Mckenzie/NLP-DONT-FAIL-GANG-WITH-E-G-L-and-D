@@ -96,11 +96,18 @@ except(Exception):
 print("enter a string to get the 4-simplex probabilities for that string (or enter '.s' to see the results of the unsupervised split)")
 print("'.x' to quit")
 done = False
+
 if device == "gpu" and torch.cuda.is_available():
 	torch_device = torch.device("cuda")
 else:
 	torch_device = torch.device("cpu")
 	torch.set_num_threads(torch.get_num_threads())	# enables CPU multithreading
+
+w1 = w1.to(torch_device)
+w2 = w2.to(torch_device)
+splits[0] = [(centroid.to(torch_device), str(label)) for centroid, label in splits[0]]
+splits[1] = [(centroid.to(torch_device), str(label)) for centroid, label in splits[1]]
+splits[2] = [(centroid.to(torch_device), str(label)) for centroid, label in splits[2]]
 
 while(not done):
 
@@ -114,6 +121,13 @@ while(not done):
 		labels = t.hotEncoding(splits[0],torch_device)
 		#encode cmd
 		centroid = p.docCentroid([cmd],embeds,idfs,torch_device)
+		xIn = t.docsToMatrix([[centroid]],torch_device)
+
+		z1 = t.getLogit(xIn, w1)
+		a1 = t.tanh(z1)
+		z2 = t.getLogit(a1, w2)
+		a2 = t.softmax(z2)
+		print(a2[0])
 		
 		
 

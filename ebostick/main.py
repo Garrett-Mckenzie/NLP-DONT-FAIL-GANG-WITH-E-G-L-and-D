@@ -141,6 +141,7 @@ def main():
 		w2 = torch.rand(24,len(labels[0]),requires_grad=True,device=torch_device)
 
 		print("training...")
+#what I found works best
 		eta = .03
 		lossDeltaThresh = 0.00001
 		max_iters = 10000
@@ -202,6 +203,9 @@ def main():
 		torch_device = torch.device("cpu")
 		torch.set_num_threads(torch.get_num_threads())	# enables CPU multithreading
 		print(f"Using CPU with {torch.get_num_threads()} threads.")
+
+	w1 = w1.to(torch_device)
+	w2 = w2.to(torch_device)
 	print("encoding labels...")
 	labels = t.hotEncoding(splits[1],torch_device)
 	print("creating feature matrix...")

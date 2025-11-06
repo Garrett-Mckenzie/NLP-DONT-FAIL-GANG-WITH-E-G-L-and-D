@@ -17,8 +17,8 @@ def hotEncoding(dSet,device):
 def docsToMatrix(dSet,device):
 	tensors = [doc[0] for doc in dSet]
 	n = len(tensors)
-	b = torch.ones(n,1)
-	featureMatrix = torch.stack(tensors)
+	b = torch.ones(n,1).to(device)
+	featureMatrix = torch.stack(tensors).to(device)
 	featureMatrix = torch.cat((featureMatrix,b),dim=1).to(device)
 	
 	return featureMatrix
