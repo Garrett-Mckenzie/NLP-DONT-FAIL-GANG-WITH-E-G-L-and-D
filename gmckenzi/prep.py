@@ -3,11 +3,12 @@ import pandas as pd
 import numpy as np
 import re
 from sklearn.model_selection import train_test_split
-import random
 from gensim.models import KeyedVectors
 import spacy
 from tqdm import tqdm
-
+from sklearn.feature_extraction.text import CountVectorizer
+from scipy.sparse import *
+import random
 
 
 def prep():
@@ -17,16 +18,6 @@ def prep():
         gCorpus = file.read()
     gCorpus = gCorpus.split("\n")
    
-    """
-    nlp = spacy.load("en_core_web_sm")
-    temp = []
-    for i in tqdm(range(len(gCorpus)) , desc = "Making Sentences"):
-        doc = gCorpus[i]
-        doc = nlp(doc)
-        for sentence in doc.sents:
-            temp.append(sentence)
-    """   
-
     dCorpus = None
     with open('../data/delaneyCorpus.txt' , 'r') as file:
         dCorpus = file.read()
@@ -74,17 +65,17 @@ def prep():
         data = pd.concat([data,sample],ignore_index = True)
     trainX,testX,trainY,testY= train_test_split(data["docs"],data["target"] , train_size = 0.8)
 
-    return ((trainX,trainY) , (testX,testY) , targetMap)
+    return ((trainX,trainY) , (testX,testY) , targetMap , IDFScores)
 
 def encode():
     #get data,embeds, and tokenizer
     nlp = spacy.blank("en")
     embeds = KeyedVectors.load("glove_embeddings.data")
-    train,test,labelMap = prep()
+    train,test,labelMap,idf = prep()
     trainX , trainY = train
     testX , testY = test
 
-    #encode training data Y
+    #encode training data
     totalTokens = 0
     inEmbed = 0
     total = len(trainX)
@@ -93,12 +84,19 @@ def encode():
         doc = trainX.iloc[i]
         centroid = np.zeros(50)
         for token in nlp(doc):
+
             if not token.is_stop and not re.search(r"\s+",str(token).lower()): 
                 vec , hasEmbed = getEmbed(embeds,str(token).lower())
                 inEmbed += hasEmbed
                 totalTokens += 1
+
+                idfScore = 1
+                if token in idf["token"]:
+                    idfScore = idf[idf["token"] == token]["idf"]
+
                 if hasEmbed != 0:
-                    centroid += vec/(LA.norm(vec,2.0))
+                    centroid += (vec/(LA.norm(vec,2.0))) * idfScore
+
         encodedTrainX.append(centroid)
     print(f"{(inEmbed/totalTokens)*100}% of tokens in training had an embedding in GLOVE")
 
@@ -106,19 +104,39 @@ def encode():
     totalTokens = 0
     inEmbed = 0
     total = len(testX)
-    encodedTrainY = []
+    encodedTestX = []
     for i in tqdm(range(total)):
         doc = testX.iloc[i]
         centroid = np.zeros(50)
         for token in nlp(doc):
+
             if not token.is_stop and not re.search(r"\s+",str(token).lower()): 
                 vec,hasEmbed = getEmbed(embeds,str(token).lower())
                 inEmbed += hasEmbed
                 totalTokens += 1
+
+                idfScore = 1
+                if token in idf["token"]:
+                    idfScore = idf[idf["token"] == token]["idf"]
+
                 if hasEmbed != 0:
                     centroid += vec/(LA.norm(vec,2.0))
-        encodedTrainY.append(centroid)
+
+        encodedTestX.append(centroid)
     print(f"{(inEmbed/totalTokens)*100}% of tokens in testing had an embedding in GLOVE")
+
+    encodedTrainX = np.array(encodedTrainX)
+    trainY = np.array(trainY)
+
+    encodedTestX = np.array(encodedTestX)
+    testY = np.array(testY)
+
+    np.savetxt("encodedTrainX.txt" , encodedTrainX ,delimiter = ',')
+    np.savetxt("trainY.txt" , trainY ,delimiter = ',')
+    np.savetxt("encodedTestX.txt" , encodedTestX ,delimiter = ',')
+    np.savetxt("testY.txt" , testY ,delimiter = ',')
+
+    print("!! All Done !!")
 
 def getEmbed(embeds,token):
     vec = None
@@ -135,5 +153,19 @@ def getIDF(corpi):
     for corpus in corpi:
         data = pd.concat([data,corpus],ignore_index = True)
 
+    vec = CountVectorizer(analyzer = 'word',stop_words = 'english')
+    counts = vec.fit_transform(data["docs"])
+    docFrequency = np.array((counts.sum(axis = 0)))[0]
+    n = len(data)
+    idf = np.log(n/docFrequency)  
+
+    tokens = vec.get_feature_names_out()
+    data = np.array([idf,tokens])
+    data = np.transpose(data)
+
+    returnMe = pd.DataFrame(data = data , columns = ["idf" , "token"])
+    return returnMe
+           
 if __name__=="__main__":
     encode()   
+
