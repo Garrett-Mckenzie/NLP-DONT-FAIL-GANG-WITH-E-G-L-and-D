@@ -9,6 +9,7 @@ from tqdm import tqdm
 from sklearn.feature_extraction.text import CountVectorizer
 from scipy.sparse import *
 import random
+import json
 
 
 def prep():
@@ -91,8 +92,8 @@ def encode():
                 totalTokens += 1
 
                 idfScore = 1
-                if token in idf["token"]:
-                    idfScore = idf[idf["token"] == token]["idf"]
+                if str(token).lower() in idf["token"]:
+                    idfScore = idf[idf["token"] == str(token).lower()]["idf"]
 
                 if hasEmbed != 0:
                     centroid += (vec/(LA.norm(vec,2.0))) * idfScore
@@ -116,11 +117,11 @@ def encode():
                 totalTokens += 1
 
                 idfScore = 1
-                if token in idf["token"]:
-                    idfScore = idf[idf["token"] == token]["idf"]
+                if str(token).lower() in idf["token"]:
+                    idfScore = idf[idf["token"] == str(token).lower()]["idf"]
 
                 if hasEmbed != 0:
-                    centroid += vec/(LA.norm(vec,2.0))
+                    centroid += vec/(LA.norm(vec,2.0)) * idfScore
 
         encodedTestX.append(centroid)
     print(f"{(inEmbed/totalTokens)*100}% of tokens in testing had an embedding in GLOVE")
@@ -135,6 +136,9 @@ def encode():
     np.savetxt("trainY.txt" , trainY ,delimiter = ',')
     np.savetxt("encodedTestX.txt" , encodedTestX ,delimiter = ',')
     np.savetxt("testY.txt" , testY ,delimiter = ',')
+    with open("targetMap.json" , 'w') as file:
+        json.dump(labelMap , file,)
+    idf.to_csv('IDF.csv',index=False)
 
     print("!! All Done !!")
 
@@ -160,12 +164,13 @@ def getIDF(corpi):
     idf = np.log(n/docFrequency)  
 
     tokens = vec.get_feature_names_out()
+    tokens = [value.lower() for value in tokens]
     data = np.array([idf,tokens])
     data = np.transpose(data)
 
     returnMe = pd.DataFrame(data = data , columns = ["idf" , "token"])
     return returnMe
-           
+
 if __name__=="__main__":
     encode()   
 

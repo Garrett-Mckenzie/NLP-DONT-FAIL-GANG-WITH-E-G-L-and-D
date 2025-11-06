@@ -12,6 +12,8 @@ import random
 import torch
 import tensorflow as tf
 import torch.nn as nn
+import json
+from prep import getEmbed
 
 class Model:
 
@@ -21,7 +23,16 @@ class Model:
         self.w2 = torch.rand(25,15, requires_grad=True,dtype=torch.float64)
         self.w3 = torch.rand(15,10, requires_grad=True,dtype=torch.float64)
         self.w4 = torch.rand(10,4, requires_grad=True,dtype=torch.float64)
+        
         self.lossFunc = nn.CrossEntropyLoss()
+
+        self.targetMap = None
+        with open('targetMap.json' , 'r') as file:
+            self.targetMap = json.load(file)
+        self.idf = pd.read_csv("IDF.csv")
+
+        self.nlp = spacy.blank("en")
+        self.embeds = KeyedVectors.load("glove_embeddings.data")
 
     #make the first value 1 for bias
     def prep(self, X):
@@ -76,6 +87,45 @@ class Model:
         for i in range(len(y_hat)):
             returnMe[i,y_hat[i]] += 1
         return returnMe
+    
+    def predictProbInfrence(self,X):
+        X = self.prepInfrence(X)
+        x = self.prep(X)
+
+        y_hat = None
+        with torch.no_grad():
+            y_hat = self.forward(x)
+            y_hat = y_hat.detach().numpy()
+
+        y_hat = y_hat[0]
+        print(y_hat)
+        print(self.targetMap)
+        for i,label in self.targetMap.items():
+            print(f"Prob of {label} is {y_hat[int(i)] * 100}%")
+
+        return y_hat
+
+    def prepInfrence(self,txt):
+        inEmbed = 0
+        totalTokens = 0
+        centroid = np.zeros(50)
+        for token in self.nlp(txt):
+            if not token.is_stop and not re.search(r"\s+" , str(token).lower()):
+                vec , hasEmbed = getEmbed(self.embeds , str(token).lower())
+                inEmbed += hasEmbed
+                totalTokens += 1
+                
+                idfScore = 1
+                if str(token).lower() in self.idf["token"]:
+                    idfScore = idf[idf["token"] == str(token).lower()]
+                
+                if hasEmbed != 0:
+                    centroid += vec/(LA.norm(vec,2.0)) * idfScore     
+        centroid = centroid.reshape(1,50)
+        print(f"{(inEmbed/totalTokens)*100}% of tokens in input had     an embedding in GLOVE")
+        return centroid
+
+         
 
     def save(self):    
         torch.save(self.w1 , "w1.pt")
