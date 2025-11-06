@@ -63,7 +63,7 @@ def prep():
     for df in df_corpi:
         sample = df.sample(min_len) 
         data = pd.concat([data,sample],ignore_index = True)
-    trainX,testX,trainY,testY= train_test_split(data["docs"],data["target"] , train_size = 0.8)
+    trainX,testX,trainY,testY= train_test_split(data["docs"],data["target"],train_size = 0.8 , stratify=data["target"])
 
     return ((trainX,trainY) , (testX,testY) , targetMap , IDFScores)
 

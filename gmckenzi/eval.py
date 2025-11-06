@@ -6,19 +6,33 @@ if __name__=="__main__":
     model.load("w1.pt","w2.pt","w3.pt","w4.pt")
     
     train,test = load_data()
+    trainX,trainY = train
     testX,testY = test
 
     predictions = model.predict(testX)
-
+    print("\n")
+   
     accuracy = accuracy_score(testY,predictions)
-    print(f"The model's accuracy was {accuracy}")
+    print(f"The model's test accuracy was {accuracy}")
 
     precision = precision_score(testY,predictions,average="macro")
-    print(f"The model's precision was {precision}")
+    print(f"The model's test precision was {precision}")
 
     recall = recall_score(testY,predictions,average="macro")
-    print(f"The model's recall was {recall}")
+    print(f"The model's test recall was {recall}")
 
     f1 = f1_score(testY,predictions,average="macro")
-    print(f"The model's f1_micro score was {f1}")
-   
+    print(f"The model's test f1_macro score was {f1}")
+
+    ps = precision_score(testY,predictions,average=None)
+    rs = recall_score(testY,predictions,average=None)
+    f1s = f1_score(testY,predictions,average=None)
+
+    print("\n")
+    for i in range(len(ps)):
+        print(f"For the {i} group we have the below scores")
+        print(f"Precision: {ps[i]}")
+        print(f"Recall: {rs[i]}")
+        print(f"F1: {f1s[i]}")
+        print("\n")
+

@@ -28,12 +28,15 @@ class Model:
         X = np.insert(X , 0 ,np.ones(len(X)) , axis = 1)
         return torch.tensor(X,requires_grad=False,dtype=torch.float64)
 
-    def forward(self, X):
+    def forward(self, X , inTraining = 0):
         out1 = torch.tanh(torch.matmul(X,self.w1))
         out2 = torch.tanh(torch.matmul(out1,self.w2))
         out3 = torch.tanh(torch.matmul(out2,self.w3))
         out4 = torch.matmul(out3,self.w4)
-        return torch.softmax(out4,dim=1)
+        if inTraining:
+            return out4
+        else:
+            return torch.softmax(out4,dim=1)
 
     def back(self, y_hat, y, lr , epoch):
         loss = self.lossFunc(y_hat , y)
@@ -58,7 +61,7 @@ class Model:
         x = self.prep(X)
         y = torch.tensor(y,requires_grad=False,dtype=torch.float64)
         for e in range(epochs):
-            y_hat = self.forward(x)
+            y_hat = self.forward(x,inTraining=1)
             self.back(y_hat,y,lr,e)
 
     def predict(self,X):
@@ -114,5 +117,6 @@ if __name__=="__main__":
     testX , testY = test
 
     model = Model()
-    model.train(trainX,trainY,0.5,10000)   
+    #lmao I love overfitting
+    model.train(trainX,trainY,1.5,10000)   
     model.save()
