@@ -98,8 +98,6 @@ class Model:
             y_hat = y_hat.detach().numpy()
 
         y_hat = y_hat[0]
-        print(y_hat)
-        print(self.targetMap)
         for i,label in self.targetMap.items():
             print(f"Prob of {label} is {y_hat[int(i)] * 100}%")
 
